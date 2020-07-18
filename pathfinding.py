@@ -1,9 +1,10 @@
 # Kyle Arrowood
-# 7/14/2020
+# 7/18/2020
 # A pathfinding algorithm visualizer
 
 import math
 from tkinter import *
+from queue import Queue
 
 class window:
     def __init__(self, screen, canvas_width, canvas_height):
@@ -13,28 +14,32 @@ class window:
     def create_window(self):
         self.screen.title("Pathfinding Algorithm Visualizer")
         option_variable = StringVar()
-        option_variable.set("Greedy Best First Search")
+        option_variable.set("A* Search")
         option_menu = OptionMenu(self.screen, option_variable,
-                                "Greedy Best First Search", "Dijkstra's Algorithm", "A* Search",
-                                "Option 4")
+                                "A* Search", "Dijkstra's Algorithm", "Greedy Best First Search",
+                                "Breadth First Search", "Depth First Search")
         # Start and end points for path
-        start = (2, 2)
-        end = (98, 48)
-        rows = 50
-        columns = 100
+        self.start = (2, 2)
+        self.end = (48, 28)
+        self.rows = 50
+        self.columns = 100
         option_menu.config(bg = "yellow")
         def button_callback():
             go_button["state"] = DISABLED
             option_menu["state"] = DISABLED
-            if option_variable.get() == "Greedy Best First Search":
-                path = greedy(self, start, end)
-                for i, node in enumerate(path):
-                    self.draw_cube(node[0], node[1], "red")
+            if option_variable.get() == "A* Search":
+                pass
             elif option_variable.get() == "Dijkstra's Algorithm":
                 pass
-            elif option_variable.get() == "A* Search":
-                pass
-            elif option_variable.get() == "Option 4":
+            elif option_variable.get() == "Greedy Best First Search":
+                path = greedy(self)
+                for i, node in enumerate(path):
+                    self.draw_cube(node[0], node[1], "lime")
+            elif option_variable.get() == "Breadth First Search":
+                path = bfs(self)
+                for i, node in enumerate(path):
+                    self.draw_cube(node[0], node[1], "lime")
+            elif option_variable.get() == "Depth First Search":
                 pass
             self.refresh()
             go_button["state"] = "normal"
@@ -42,15 +47,41 @@ class window:
         go_button = Button(self.screen, text = "GO!", command = button_callback,
                         bg = "yellow", activebackground = "white")
         def clear_callback():
-            self.create_grid(self.canvas_width, self.canvas_height, rows, columns, start, end)
-            self.grid = [[0 for i in range(rows)] for j in range(columns)]
+            self.create_grid()
+            self.grid = [[0 for i in range(self.rows)] for j in range(self.columns)]
         clear_button = Button(self.screen, text = "Clear", command = clear_callback,
                         bg = "yellow", activebackground = "white")
-        #label = Label(self.screen, text = "Amount of items:\n(MAX: 500)")
-        #label.place(x = 300, y = 10)
+        def move_callback():
+            popup = Tk()
+            label = Label(popup, text='x range = (0, 99)\ny range = (0, 49)')
+            l1 = Label(popup, text='Start(x,y): ')
+            startBox = Entry(popup)
+            l2 = Label(popup, text='End(x,y): ')
+            endBox = Entry(popup)
+            
+            def onsubmit():
+                s = startBox.get().split(',')
+                e = endBox.get().split(',')
+                self.start = (int(s[0]), int(s[1]))
+                self.end = (int(e[0]), int(e[1]))
+                popup.quit()
+                popup.destroy()
+                self.create_grid()
+            submit = Button(popup, text='Submit', command=onsubmit)
+            label.grid(row = 0, columnspan = 2)
+            submit.grid(columnspan = 2, row = 3)
+            l2.grid(row = 2, pady = 3)
+            endBox.grid(row = 2, column = 1, pady = 3)
+            startBox.grid(row = 1, column = 1, pady = 3)
+            l1.grid(row = 1, pady = 3)
+            popup.update()
+            popup.mainloop()
+        move_button = Button(self.screen, text = "Move start and end nodes", command = move_callback,
+                        bg = "yellow", activebackground = "white")
         option_menu.place(x = 400, y = 7)
         go_button.place(x = 625, y = 9)
         clear_button.place(x = 325, y = 9)
+        move_button.place(x = 125, y = 9)
         self.canvas = Canvas(self.screen, width = self.canvas_width, height = self.canvas_height)
         def callback(event):
             # Checks range
@@ -62,32 +93,37 @@ class window:
         self.canvas.bind("<B1-Motion>", callback)
         self.canvas.bind("<Button-1>", callback)
         self.canvas.place(x = 3, y = 50)
-        self.create_grid(self.canvas_width, self.canvas_height, 50, 100, start, end)
+        self.create_grid()
         self.refresh()
         self.screen.mainloop()
     def refresh(self):
         self.canvas.update()
-    def create_grid(self, width, height, rows, columns, start, end):
+    def create_grid(self):
         # Creates the grid variable that will store values which will represent different colors
-        self.grid = [[0 for i in range(rows)] for j in range(columns)]
+        self.grid = [[0 for i in range(self.rows)] for j in range(self.columns)]
         self.canvas.delete("all")
-        col_width = width / columns
+        col_width = self.canvas_width / self.columns
         position = 0
-        for i in range(columns):
+        for i in range(self.columns):
             position = position + col_width
             # Draws vertical line
-            self.canvas.create_line(position, 0, position, height)
-        row_height = height / rows
+            self.canvas.create_line(position, 0, position, self.canvas_height)
+        row_height = self.canvas_height / self.rows
         position = 0
-        for i in range(columns):
+        for i in range(self.columns):
             position = position + row_height
             # Draws horizontal line
-            self.canvas.create_line(0, position, width, position)
-        self.draw_cube(start[0], start[1], "blue")
-        self.draw_cube(end[0], end[1], "blue")
+            self.canvas.create_line(0, position, self.canvas_width, position)
+        self.draw_cube(self.start[0], self.start[1], "blue")
+        self.draw_cube(self.end[0], self.end[1], "red")
     def draw_cube(self, x, y, color):
         cube_width = 10 # Constant unless size of grid changes
         self.canvas.create_rectangle(x * cube_width, y * cube_width, (x * cube_width) + cube_width, (y * cube_width) + cube_width, fill=color)
+
+def a_star(window, start, end):
+    pass
+def dijkstra(window, start, end):
+    pass
 class greedy_node:
     # Node used for greedy search
     def __init__(self, parent=None, position=None):
@@ -98,10 +134,10 @@ class greedy_node:
         self.f = 0
     def __eq__(self, other):
         return self.position == other.position
-def greedy(window, start, end):
+def greedy(window):
     # Returns list of coords of the path
-    start_node = greedy_node(None, start)
-    end_node = greedy_node(None, end)
+    start_node = greedy_node(None, window.start)
+    end_node = greedy_node(None, window.end)
     open_list = []
     closed_list = []
     open_list.append(start_node)
@@ -125,7 +161,6 @@ def greedy(window, start, end):
                 cur = cur.parent
             return path[::-1] # Reversed path
 
-        children = []
         for i in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
             node_position = (current.position[0] + i[0], current.position[1] + i[1])
             # Checks range
@@ -134,14 +169,9 @@ def greedy(window, start, end):
             # Checks if it is a wall
             if window.grid[node_position[0]][node_position[1]] != 0:
                 continue
-            new = greedy_node(current, node_position)
+            child = greedy_node(current, node_position)
             if i == (-1, -1) or i == (-1, 1) or i == (1, -1) or i == (1, 1):
-                new.g = new.g + 0.414
-            children.append(new)
-        
-        for child in children:
-            window.draw_cube(child.position[0], child.position[1], "orange")
-            window.refresh()
+                child.g = child.g + 0.414
             # Child already on closed list
             for closed in closed_list:
                 if child == closed:
@@ -157,6 +187,40 @@ def greedy(window, start, end):
                     break
             else:
                 open_list.append(child)
+                window.draw_cube(child.position[0], child.position[1], "magenta")
+                window.refresh()
+def bfs(window):
+    q = Queue()
+    q.put(window.start)
+    path = dict()
+    path[window.start] = None
+    while not q.empty():
+        current = q.get()
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
+            node_position = (current[0] + i[0], current[1] + i[1])
+            # Checks range
+            if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
+                continue
+            # Checks if it is a wall
+            if window.grid[node_position[0]][node_position[1]] != 0:
+                continue
+            if node_position not in path:
+                q.put(node_position)
+                path[node_position] = current
+            window.draw_cube(node_position[0], node_position[1], "magenta")
+            window.refresh()
+            if current == window.end:
+                result = []
+                while current != window.start: 
+                    result.append(current)
+                    current = path[current]
+                result.append(window.start)
+                result.reverse()
+                return result
+def dfs(window):
+    pass
+            
+        
 
 
 
