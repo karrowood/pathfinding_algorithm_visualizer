@@ -27,8 +27,12 @@ class window:
         def button_callback():
             go_button["state"] = DISABLED
             option_menu["state"] = DISABLED
+            clear_button["state"] = DISABLED
+            move_button["state"] = DISABLED
             if option_variable.get() == "A* Search":
-                pass
+                path = a_star(self)
+                for i, node in enumerate(path):
+                    self.draw_cube(node[0], node[1], "lime")
             elif option_variable.get() == "Dijkstra's Algorithm":
                 pass
             elif option_variable.get() == "Greedy Best First Search":
@@ -44,6 +48,8 @@ class window:
             self.refresh()
             go_button["state"] = "normal"
             option_menu["state"] = "normal"
+            clear_button["state"] = "normal"
+            move_button["state"] = "normal"
         go_button = Button(self.screen, text = "GO!", command = button_callback,
                         bg = "yellow", activebackground = "white")
         def clear_callback():
@@ -119,40 +125,33 @@ class window:
     def draw_cube(self, x, y, color):
         cube_width = 10 # Constant unless size of grid changes
         self.canvas.create_rectangle(x * cube_width, y * cube_width, (x * cube_width) + cube_width, (y * cube_width) + cube_width, fill=color)
-
-def a_star(window, start, end):
-    pass
-def dijkstra(window, start, end):
-    pass
-class greedy_node:
+class Node:
     # Node used for greedy search
     def __init__(self, parent=None, position=None):
         self.parent = parent
         self.position = position
+        self.previous = None
         self.g = 0
         self.h = 0
         self.f = 0
     def __eq__(self, other):
         return self.position == other.position
-def greedy(window):
+def a_star(window):
     # Returns list of coords of the path
-    start_node = greedy_node(None, window.start)
-    end_node = greedy_node(None, window.end)
-    open_list = []
+    start_node = Node(None, window.start)
+    end_node = Node(None, window.end)
+    open_list = [start_node]
     closed_list = []
-    open_list.append(start_node)
     while len(open_list) > 0:
-        # Grabs next current
-        current = open_list[0]
-        index = 0
-        for i, node in enumerate(open_list):
-            if node.f < current.f and node.f != 0:
-                current = node
-                index = i
-        # Puts in closed list
-        open_list.pop(index)
+        # Gets current
+        low = 0
+        for i in range(len(open_list)):
+            if open_list[i].f < open_list[low].f:
+                low = i
+        current = open_list[low]
+        open_list.pop(low)
         closed_list.append(current)
-        # When path is done
+        # Checks if found end
         if current == end_node:
             path = []
             cur = current
@@ -160,8 +159,7 @@ def greedy(window):
                 path.append(cur.position)
                 cur = cur.parent
             return path[::-1] # Reversed path
-
-        for i in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Neighbor squares
             node_position = (current.position[0] + i[0], current.position[1] + i[1])
             # Checks range
             if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
@@ -169,24 +167,68 @@ def greedy(window):
             # Checks if it is a wall
             if window.grid[node_position[0]][node_position[1]] != 0:
                 continue
-            child = greedy_node(current, node_position)
+            child = Node(current, node_position)
+            # Child already on closed list
+            if child in closed_list:
+                continue
+            child.g = abs(child.position[0] - start_node.position[0]) + abs(child.position[1] - start_node.position[1])
+            child.h = abs(child.position[0] - end_node.position[0]) + abs(child.position[1] - end_node.position[1])
+            child.f = child.g + child.h
+            add = True
+            for node in open_list:
+                if child == node and child.f >= node.f:
+                    add = False
+            if add:
+                open_list.append(child)
+            window.draw_cube(child.position[0], child.position[1], "magenta")
+            window.refresh()
+def dijkstra(window):
+    pass
+def greedy(window):
+    # Returns list of coords of the path
+    start_node = Node(None, window.start)
+    end_node = Node(None, window.end)
+    open_list = [start_node]
+    closed_list = []
+    while len(open_list) > 0:
+        # Gets current
+        low = 0
+        for i in range(len(open_list)):
+            if open_list[i].f < open_list[low].f:
+                low = i
+        current = open_list[low]
+        # Checks if found end
+        if current == end_node:
+            path = []
+            cur = current
+            while cur is not None:
+                path.append(cur.position)
+                cur = cur.parent
+            return path[::-1] # Reversed path
+        open_list.pop(low)
+        closed_list.append(current)
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Neighbor squares
+            node_position = (current.position[0] + i[0], current.position[1] + i[1])
+            # Checks range
+            if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
+                continue
+            # Checks if it is a wall
+            if window.grid[node_position[0]][node_position[1]] != 0:
+                continue
+            child = Node(current, node_position)
             if i == (-1, -1) or i == (-1, 1) or i == (1, -1) or i == (1, 1):
                 child.g = child.g + 0.414
             # Child already on closed list
-            for closed in closed_list:
-                if child == closed:
-                    break
-            else:
-                # f, g, and h values
-                child.g = current.g + 1
-                child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+            if child not in closed_list:
+                temp_g = child.g + 1
+                if child in open_list:
+                    if child.g > temp_g:
+                        child.g = temp_g
+                else:
+                    child.g = temp_g
+                    open_list.append(child)
+                child.h = math.sqrt((child.position[0] - end_node.position[0]) ** 2 + (child.position[1] - end_node.position[1]) ** 2)
                 child.f = child.g + child.h
-            # Child already on open list
-            for open_node in open_list:
-                if child == open_node and child.g >= open_node.g:
-                    break
-            else:
-                open_list.append(child)
                 window.draw_cube(child.position[0], child.position[1], "magenta")
                 window.refresh()
 def bfs(window):
