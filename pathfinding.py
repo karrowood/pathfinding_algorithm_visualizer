@@ -1,5 +1,5 @@
 # Kyle Arrowood
-# 7/18/2020
+# 7/19/2020
 # A pathfinding algorithm visualizer
 #TODO A*, Greedy and BFS work, but dijkstras and dfs do not yet
 
@@ -137,6 +137,14 @@ class Node:
         self.f = 0
     def __eq__(self, other):
         return self.position == other.position
+def get_distance(first, second):
+    (x1, y1) = first
+    (x2, y2) = second
+    x = abs(x1 - x2)
+    y = abs(y1 - y2)
+    if x > y:
+        return 14 * y + 10 * (x - y)
+    return 14 * x + 10 * (y - x)
 def a_star(window):
     # Returns list of coords of the path
     start_node = Node(None, window.start)
@@ -172,17 +180,16 @@ def a_star(window):
             # Child already on closed list
             if child in closed_list:
                 continue
-            child.g = abs(child.position[0] - start_node.position[0]) + abs(child.position[1] - start_node.position[1])
-            child.h = abs(child.position[0] - end_node.position[0]) + abs(child.position[1] - end_node.position[1])
-            child.f = child.g + child.h
-            add = True
-            for node in open_list:
-                if child == node and child.f >= node.f:
-                    add = False
-            if add:
-                open_list.append(child)
-                window.draw_cube(child.position[0], child.position[1], "magenta")
-                window.refresh()
+            temp_g = current.g + get_distance(current.position, child.position)
+            if temp_g < child.g or child not in open_list:
+                child.g = temp_g
+                child.h = get_distance(child.position, end_node.position)
+                child.f = child.g + child.h
+                child.parent = current
+                if child not in open_list:
+                    open_list.append(child)
+                    window.draw_cube(current.position[0], current.position[1], "magenta")
+                    window.refresh()
 
 def dijkstra(window):
     pass
@@ -229,7 +236,8 @@ def greedy(window):
                 else:
                     child.g = temp_g
                     open_list.append(child)
-                child.h = math.sqrt((child.position[0] - end_node.position[0]) ** 2 + (child.position[1] - end_node.position[1]) ** 2)
+                #child.h = math.sqrt((child.position[0] - end_node.position[0]) ** 2 + (child.position[1] - end_node.position[1]) ** 2)
+                child.h = get_distance(child.position, end_node.position)
                 child.f = child.g + child.h
                 window.draw_cube(child.position[0], child.position[1], "magenta")
                 window.refresh()
