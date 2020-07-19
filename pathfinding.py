@@ -1,6 +1,7 @@
 # Kyle Arrowood
 # 7/18/2020
 # A pathfinding algorithm visualizer
+#TODO A*, Greedy and BFS work, but dijkstras and dfs do not yet
 
 import math
 from tkinter import *
@@ -20,7 +21,7 @@ class window:
                                 "Breadth First Search", "Depth First Search")
         # Start and end points for path
         self.start = (2, 2)
-        self.end = (48, 28)
+        self.end = (95, 45)
         self.rows = 50
         self.columns = 100
         option_menu.config(bg = "yellow")
@@ -159,7 +160,7 @@ def a_star(window):
                 path.append(cur.position)
                 cur = cur.parent
             return path[::-1] # Reversed path
-        for i in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Neighbor squares
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Neighbor squares
             node_position = (current.position[0] + i[0], current.position[1] + i[1])
             # Checks range
             if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
@@ -180,8 +181,9 @@ def a_star(window):
                     add = False
             if add:
                 open_list.append(child)
-            window.draw_cube(child.position[0], child.position[1], "magenta")
-            window.refresh()
+                window.draw_cube(child.position[0], child.position[1], "magenta")
+                window.refresh()
+
 def dijkstra(window):
     pass
 def greedy(window):
@@ -207,7 +209,7 @@ def greedy(window):
             return path[::-1] # Reversed path
         open_list.pop(low)
         closed_list.append(current)
-        for i in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Neighbor squares
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Neighbor squares
             node_position = (current.position[0] + i[0], current.position[1] + i[1])
             # Checks range
             if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
@@ -216,8 +218,8 @@ def greedy(window):
             if window.grid[node_position[0]][node_position[1]] != 0:
                 continue
             child = Node(current, node_position)
-            if i == (-1, -1) or i == (-1, 1) or i == (1, -1) or i == (1, 1):
-                child.g = child.g + 0.414
+            #if i == (-1, -1) or i == (-1, 1) or i == (1, -1) or i == (1, 1):
+                #child.g = child.g + 0.414
             # Child already on closed list
             if child not in closed_list:
                 temp_g = child.g + 1
@@ -238,7 +240,7 @@ def bfs(window):
     path[window.start] = None
     while not q.empty():
         current = q.get()
-        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Neightbor squares
             node_position = (current[0] + i[0], current[1] + i[1])
             # Checks range
             if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
