@@ -1,7 +1,9 @@
 # Kyle Arrowood
-# 7/19/2020
+# 7/20/2020
 # A pathfinding algorithm visualizer
-#TODO A*, Greedy and BFS work, but dijkstras and dfs do not yet
+# This program shows a grid. The user can choose to draw barriers on the grid,
+# they can then pick an algorithm and watch how that specific algorthim works.
+
 
 import math
 from tkinter import *
@@ -18,7 +20,7 @@ class window:
         option_variable.set("A* Search")
         option_menu = OptionMenu(self.screen, option_variable,
                                 "A* Search", "Dijkstra's Algorithm", "Greedy Best First Search",
-                                "Breadth First Search", "Depth First Search")
+                                "Breadth First Search")
         # Start and end points for path
         self.start = (2, 2)
         self.end = (95, 45)
@@ -35,7 +37,9 @@ class window:
                 for i, node in enumerate(path):
                     self.draw_cube(node[0], node[1], "lime")
             elif option_variable.get() == "Dijkstra's Algorithm":
-                pass
+                path = dijkstra(self)
+                for i, node in enumerate(path):
+                    self.draw_cube(node[0], node[1], "lime")
             elif option_variable.get() == "Greedy Best First Search":
                 path = greedy(self)
                 for i, node in enumerate(path):
@@ -44,8 +48,6 @@ class window:
                 path = bfs(self)
                 for i, node in enumerate(path):
                     self.draw_cube(node[0], node[1], "lime")
-            elif option_variable.get() == "Depth First Search":
-                pass
             self.refresh()
             go_button["state"] = "normal"
             option_menu["state"] = "normal"
@@ -143,8 +145,8 @@ def get_distance(first, second):
     x = abs(x1 - x2)
     y = abs(y1 - y2)
     if x > y:
-        return 14 * y + 10 * (x - y)
-    return 14 * x + 10 * (y - x)
+        return y + (x - y)
+    return x + (y - x)
 def a_star(window):
     # Returns list of coords of the path
     start_node = Node(None, window.start)
@@ -180,7 +182,7 @@ def a_star(window):
             # Child already on closed list
             if child in closed_list:
                 continue
-            temp_g = current.g + get_distance(current.position, child.position)
+            temp_g = current.g + 1
             if temp_g < child.g or child not in open_list:
                 child.g = temp_g
                 child.h = get_distance(child.position, end_node.position)
@@ -192,7 +194,38 @@ def a_star(window):
                     window.refresh()
 
 def dijkstra(window):
-    pass
+    q = Queue()
+    q.put(window.start)
+    path = dict()
+    path[window.start] = None
+    cost = dict()
+    cost[window.start] = 0
+    while not q.empty():
+        current = q.get()
+        if current == window.end:
+                result = []
+                while current != window.start: 
+                    result.append(current)
+                    current = path[current]
+                result.append(window.start)
+                result.reverse()
+                return result
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Neighbor squares
+            node_position = (current[0] + i[0], current[1] + i[1])
+            # Checks range
+            if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
+                continue
+            # Checks if it is a wall
+            if window.grid[node_position[0]][node_position[1]] != 0:
+                continue
+            new_cost = cost[current] + 1
+            if node_position not in cost or new_cost < cost[node_position]:
+                cost[node_position] = new_cost
+                path[node_position] = current
+                q.put(node_position)
+                window.draw_cube(node_position[0], node_position[1], "magenta")
+                window.refresh()
+            
 def greedy(window):
     # Returns list of coords of the path
     start_node = Node(None, window.start)
@@ -225,8 +258,6 @@ def greedy(window):
             if window.grid[node_position[0]][node_position[1]] != 0:
                 continue
             child = Node(current, node_position)
-            #if i == (-1, -1) or i == (-1, 1) or i == (1, -1) or i == (1, 1):
-                #child.g = child.g + 0.414
             # Child already on closed list
             if child not in closed_list:
                 temp_g = child.g + 1
@@ -236,7 +267,6 @@ def greedy(window):
                 else:
                     child.g = temp_g
                     open_list.append(child)
-                #child.h = math.sqrt((child.position[0] - end_node.position[0]) ** 2 + (child.position[1] - end_node.position[1]) ** 2)
                 child.h = get_distance(child.position, end_node.position)
                 child.f = child.g + child.h
                 window.draw_cube(child.position[0], child.position[1], "magenta")
@@ -248,7 +278,7 @@ def bfs(window):
     path[window.start] = None
     while not q.empty():
         current = q.get()
-        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Neightbor squares
+        for i in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Neighbor squares
             node_position = (current[0] + i[0], current[1] + i[1])
             # Checks range
             if node_position[0] > (len(window.grid) - 1) or node_position[0] < 0 or node_position[1] > (len(window.grid[len(window.grid) - 1]) - 1) or node_position[1] < 0:
@@ -259,8 +289,8 @@ def bfs(window):
             if node_position not in path:
                 q.put(node_position)
                 path[node_position] = current
-            window.draw_cube(node_position[0], node_position[1], "magenta")
-            window.refresh()
+                window.draw_cube(node_position[0], node_position[1], "magenta")
+                window.refresh()
             if current == window.end:
                 result = []
                 while current != window.start: 
@@ -269,15 +299,6 @@ def bfs(window):
                 result.append(window.start)
                 result.reverse()
                 return result
-def dfs(window):
-    pass
-            
-        
-
-
-
-
-
 
 def main():
     screen = Tk()
